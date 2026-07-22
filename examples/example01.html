@@ -1,0 +1,29 @@
+<html>
+    <head>
+        <title>test page for logger</title>
+        <script lang="javascript">
+            const CONFIG = {
+                LOG_ENDPOINT: 'http://localhost:8080/api/log/std',
+            };
+        </script>
+        <script lang="javascript" src="http://localhost:8080/static/client.js" ></script>
+    </head>
+    <body>
+        <button id="buy-btn">Test!</button>
+        <script lang="javascript">
+            logger.pageView();
+
+            // 2. Логируем клик по кнопке
+            document.getElementById('buy-btn').addEventListener('click', () => {
+            logger.action('purchase_click', { productId: '123', price: 99.99 });
+            });
+
+            // 3. Логируем ошибку в try/catch
+            try {
+            // какой-то код
+            } catch (err) {
+            logger.error('Ошибка расчёта корзины', { stack: err.stack });
+            }
+        </script>
+    </body>
+</html>

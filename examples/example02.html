@@ -1,0 +1,36 @@
+<html>
+    <head>
+        <title>test page for logger</title>
+        <script lang="javascript">
+            const CONFIG = {
+                LOG_ENDPOINT: 'http://localhost:8080/api/log/std',
+            };
+        </script>
+        <script lang="javascript" src="http://localhost:8080/static/client.js" ></script>
+    </head>
+    <body>
+        <button id="buy-btn">Test!</button>
+        <script lang="javascript">
+            // 1. Включаем автоматическое логирование кликов по ссылкам и кнопкам
+            const disableAutoLog = logger.enableAutoClicks({
+                excludeSelector: '.no-log, [data-log="false"]', // не логируем элементы с этими классами/атрибутами
+                includeSelectors: ['a', 'button', '[role="button"]'],
+                dataExtractor: (el) => ({
+                    // добавляем произвольные данные, например, из data-атрибутов
+                    productId: el.dataset.productId,
+                    price: el.dataset.price,
+                }),
+                preventDefault: false, // не отменяем переход по ссылкам (можно выставить true, если нужно сначала залогировать и потом перейти)
+            });
+
+            // 2. Логируем просмотр страницы
+            logger.pageView();
+
+            // 3. Логируем кастомное действие
+            logger.action('add_to_cart', { productId: '123', quantity: 1 });
+
+            // 4. При необходимости отключаем авто-логирование (например, при уходе со страницы)
+            // window.addEventListener('beforeunload', () => disableAutoLog());
+        </script>
+    </body>
+</html>

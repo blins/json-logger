@@ -93,6 +93,96 @@ function sendPendingEvents() {
   });
 }
 
+// ---------- Автоматическое логирование кликов ----------
+/**
+ * Включает автоматический сбор кликов по ссылкам, кнопкам и элементам с ролью button.
+ * @param {Object} options
+ * @param {string} options.excludeSelector - CSS-селектор для исключения элементов (по умолчанию '[data-log-exclude]')
+ * @param {string[]} options.includeSelectors - массив селекторов, которые нужно отслеживать
+ * @param {Function} options.dataExtractor - функция, получающая элемент и возвращающая доп. поля для события
+ * @param {boolean} options.preventDefault - отменять стандартное действие ссылок (обычно false)
+ * @returns {Function} функция для отключения авто-логирования
+ */
+function enableAutoLogging(options = {}) {
+  const {
+    excludeSelector = '[data-log-exclude]',
+    includeSelectors = ['a', 'button', '[role="button"]', 'input[type="button"]', 'input[type="submit"]'],
+    dataExtractor = null,
+    preventDefault = false,
+  } = options;
+
+  // Основной обработчик кликов (делегирование)
+  const clickHandler = (event) => {
+    const target = event.target.closest(includeSelectors.join(','));
+    if (!target) return;
+
+    // Проверяем, не исключён ли элемент
+    if (target.matches(excludeSelector)) return;
+
+    // При необходимости отменяем переход по ссылке (например, для логирования перед уходом)
+    if (preventDefault && target.tagName === 'A') {
+      event.preventDefault();
+    }
+
+    // Собираем базовые данные об элементе
+    const eventData = {
+      type: 'click',
+      element: target.tagName.toLowerCase(),
+      text: target.textContent?.trim().slice(0, 200) || '', // обрезаем длинные тексты
+      id: target.id || undefined,
+      classes: target.className || undefined,
+      href: target.href || undefined,
+      data: extractDataAttributes(target),
+    };
+
+    // Добавляем кастомные поля, если передана функция
+    if (dataExtractor) {
+      Object.assign(eventData, dataExtractor(target));
+    }
+
+    // Отправляем событие
+    logEvent(eventData);
+  };
+
+  // Вешаем обработчик на документ (срабатывает на фазе всплытия)
+  document.addEventListener('click', clickHandler);
+
+  // Возвращаем функцию отключения
+  return () => {
+    document.removeEventListener('click', clickHandler);
+  };
+}
+
+// Вспомогательная функция извлечения всех data-* атрибутов
+function extractDataAttributes(element) {
+  const data = {};
+  for (const attr of element.attributes) {
+    if (attr.name.startsWith('data-')) {
+      const key = attr.name.slice(5); // убираем 'data-'
+      data[key] = attr.value;
+    }
+  }
+  return data;
+}
+
+function enableAutoChanges(options = {}) {
+  const { excludeSelector = '[data-log-exclude]', includeSelectors = ['input', 'select', 'textarea'] } = options;
+  const handler = (event) => {
+    const target = event.target.closest(includeSelectors.join(','));
+    if (!target || target.matches(excludeSelector)) return;
+    logEvent({
+      type: 'change',
+      element: target.tagName.toLowerCase(),
+      name: target.name,
+      value: target.value,
+      checked: target.checked,
+      // ...
+    });
+  };
+  document.addEventListener('change', handler);
+  return () => document.removeEventListener('change', handler);
+}
+
 const logger = {
   /**
    * Логирование произвольного действия
@@ -114,4 +204,7 @@ const logger = {
   pageView: (page = window.location.pathname) => {
     return logEvent({ type: 'pageview', page });
   },
+  // Добавляем возможность включить авто-клики
+  enableAutoClicks: enableAutoLogging,
 };
+

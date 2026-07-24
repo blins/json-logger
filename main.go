@@ -73,7 +73,7 @@ func main() {
 		lfc := ec.Logger.Type
 		if lf, ok := EndpointLoggerRegistry[lfc]; ok {
 			lh := lf.New(ec.Logger.Options)
-			if closer := lh.(io.Closer); closer != nil {
+			if closer, ok := lh.(io.Closer); ok {
 				defer closer.Close()
 			}
 			e := &Endpoint{

@@ -1,0 +1,6 @@
+endpoints:
+  - name: std
+    logger:
+      type: stdout
+      options:
+        channel: STD

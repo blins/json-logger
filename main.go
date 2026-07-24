@@ -72,9 +72,13 @@ func main() {
 	for _, ec := range config.Endpoints {
 		lfc := ec.Logger.Type
 		if lf, ok := EndpointLoggerRegistry[lfc]; ok {
+			lh := lf.New(ec.Logger.Options)
+			if closer := lh.(io.Closer); closer != nil {
+				defer closer.Close()
+			}
 			e := &Endpoint{
 				Name:    ec.Name,
-				Handler: lf.New(ec.Logger.Options),
+				Handler: lh,
 			}
 			http.Handle("/api/log/"+e.Name, e)
 		} else {

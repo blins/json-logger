@@ -1,6 +1,13 @@
 package main
 
-import "net/http"
+import (
+	"flag"
+	"io"
+	"net/http"
+	"os"
+
+	"go.yaml.in/yaml/v2"
+)
 
 var httpBind string
 
@@ -23,16 +30,57 @@ func corsMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+type ConfigEndpointLogger struct {
+	Type    string
+	Options map[string]any
+}
+
+type ConfigEndpoint struct {
+	Name   string
+	Logger ConfigEndpointLogger
+}
+
+type Config struct {
+	Endpoints []*ConfigEndpoint
+}
+
+var config Config
+
 func main() {
+	var configFile string = "config.yaml"
+	flag.StringVar(&configFile, "config", configFile, "config file")
+
+	flag.Parse()
+
+	f, err := os.Open(configFile)
+	if err != nil {
+		panic(err)
+	}
+	data, err := io.ReadAll(f)
+	if err != nil {
+		panic(err)
+	}
+	err = yaml.Unmarshal(data, &config)
+	if err != nil {
+		panic(err)
+	}
+
 	if httpBind == "" {
 		httpBind = ":8080"
 	}
-	e := &Endpoint{
-		Name:    "std",
-		Handler: NewStdLogger("STD"),
-	}
 
+	for _, ec := range config.Endpoints {
+		lfc := ec.Logger.Type
+		if lf, ok := EndpointLoggerRegistry[lfc]; ok {
+			e := &Endpoint{
+				Name:    ec.Name,
+				Handler: lf.New(ec.Logger.Options),
+			}
+			http.Handle("/api/log/"+e.Name, e)
+		} else {
+			panic("logger " + lfc + "not found")
+		}
+	}
 	http.Handle("/static/", http.FileServer(http.FS(staticFiles)))
-	http.Handle("/api/log/"+e.Name, e)
 	http.ListenAndServe(httpBind, corsMiddleware(http.DefaultServeMux))
 }

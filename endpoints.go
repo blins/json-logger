@@ -65,14 +65,44 @@ func (l LoggerWrapper) Put(jString string) error {
 	return nil
 }
 
-func NewStdLogger(channel string) LoggerWrapper {
+func NewStdLogger(options map[string]any) EndpointLogger {
+	channel := "STD"
+	if options != nil {
+		if v, ok := options["channel"]; ok {
+			channel = v.(string)
+		}
+	}
 	return LoggerWrapper{
 		log.New(log.Default().Writer(), "["+channel+"] ", log.LstdFlags|log.Lmsgprefix),
 	}
+}
+
+type EndpointLoggerFabric interface {
+	New(options map[string]any) EndpointLogger
+}
+
+type EndpointLoggerFabricFunc func(map[string]any) EndpointLogger
+
+func (f EndpointLoggerFabricFunc) New(options map[string]any) EndpointLogger {
+	return f(options)
 }
 
 type TokenString string
 
 func (t TokenString) Check(s string) bool {
 	return s == string(t)
+}
+
+var EndpointLoggerRegistry map[string]EndpointLoggerFabric
+
+func RegisterEndpointLoggerFabric(name string, fabric EndpointLoggerFabric) {
+	if EndpointLoggerRegistry == nil {
+		EndpointLoggerRegistry = make(map[string]EndpointLoggerFabric)
+	}
+	EndpointLoggerRegistry[name] = fabric
+
+}
+
+func init() {
+	RegisterEndpointLoggerFabric("stdout", EndpointLoggerFabricFunc(NewStdLogger))
 }

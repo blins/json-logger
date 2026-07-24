@@ -1,0 +1,1 @@
+CREATE TABLE <YOU_TABLE_NAME> ( js jsonb );

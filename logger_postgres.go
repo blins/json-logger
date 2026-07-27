@@ -13,7 +13,7 @@ type PostgresJSONLogger struct {
 }
 
 func (l *PostgresJSONLogger) Put(jString string) error {
-	query_s := "INSERT INTO " + l.tableName + " VALUES ('" + jString + "');"
+	query_s := "INSERT INTO " + l.tableName + " (js) VALUES ('" + jString + "');"
 	_, err := l.db.Exec(query_s)
 	return err
 }

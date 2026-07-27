@@ -1,1 +1,1 @@
-CREATE TABLE <YOU_TABLE_NAME> ( js jsonb );
+CREATE TABLE t_logs ( js jsonb );

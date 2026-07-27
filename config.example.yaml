@@ -9,4 +9,4 @@ endpoints:
       type: postgres
       options:
         dsn: host=localhost port=5432 user=postgres password=example dbname=product_logs sslmode=disable
-        table-name: prod_logs
+        table-name: t_logs
